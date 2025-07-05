@@ -218,7 +218,7 @@ Aᴠᴀɪʟᴀʙʟᴇ ᴄᴏᴍᴍᴀɴᴅs:
 ⬤ /pat ➥ ᴍᴀᴋᴇ ᴀ ᴘᴀᴛ ꜱᴏᴍᴇᴏɴᴇ. ɪꜰ ᴜꜱᴇᴅ ᴀꜱ ᴀ ʀᴇᴘʟʏ , ᴍᴀᴋᴇ ᴘᴀᴛ ᴛʜᴇ ʀᴇᴘʟɪᴇꜱ ᴜꜱᴇʀꜱ.
 """
 
-HELP_CHATBOT = """
+HELP_22 = """
 <u>ᴄʜᴀᴛʙᴏᴛ ᴍᴏᴅᴇ :</u> [ᴡᴏʀᴋs ɪɴ ᴅᴍs & ɢʀᴏᴜᴘs]
 
 Enable or disable chatbot replies in your chat or group.
