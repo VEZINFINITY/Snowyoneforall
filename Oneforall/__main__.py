@@ -1,9 +1,8 @@
 import asyncio
 import importlib
-import openai
 
 from pyrogram import idle, filters, Client
-from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
+from pyrogram.types import Message
 from pytgcalls.exceptions import NoActiveGroupCall
 
 import config
@@ -14,85 +13,67 @@ from Oneforall.misc import sudo
 from Oneforall.plugins import ALL_MODULES
 from Oneforall.utils.database import get_banned_users, get_gbanned
 
-# GPT API
+# In-memory toggle store
+CHATBOT_USERS = set()
+MUSICCLONE_USERS = set()
+
+# GPT chat
+import openai
 openai.api_key = OPENAI_API_KEY
 
-# Chat toggles stored per chat ID
-CHATBOT_CHATS = set()
-MUSICCLONE_CHATS = set()
 CLONED_BOTS = []
 
-# Start and Help Commands
-@app.on_message(filters.private & filters.command("start"))
-async def start_cmd(client, message):
-    await message.reply(
-        "👋 Welcome! I'm alive.\nUse /help to see commands.",
-        reply_markup=InlineKeyboardMarkup(
-            [[InlineKeyboardButton("Support", url="https://t.me/YourSupportGroup")]]
-        )
-    )
-
-@app.on_message(filters.private & filters.command("help"))
-async def help_cmd(client, message):
-    await message.reply(
-        "<u>ᴄʜᴀᴛʙᴏᴛ ᴍᴏᴅᴇ :</u> [ᴡᴏʀᴋs ɪɴ ᴅᴍs & ɢʀᴏᴜᴘs]\n\n"
-        "⬤ /chatbot on ➥ ᴇɴᴀʙʟᴇs ᴄʜᴀᴛʙᴏᴛ ʀᴇᴘʟɪᴇs ɪɴ ᴛʜᴇ ᴄʜᴀᴛ.\n"
-        "⬤ /chatbot off ➥ ᴅɪsᴀʙʟᴇs ᴄʜᴀᴛʙᴏᴛ ʀᴇᴘʟɪᴇs.\n\n"
-        "> ʙᴏᴛ ᴀᴅᴍɪɴ ʀᴇQᴜɪʀᴇᴅ ɪɴ ɢʀᴏᴜᴘꜱ."
-    )
-
-# Chatbot Toggle
 @app.on_message(filters.command("chatbot") & filters.user(config.SUDO_USERS))
 async def toggle_chatbot(_, message: Message):
     if len(message.command) < 2:
         return await message.reply("Usage: /chatbot on or off")
     arg = message.command[1].lower()
     chat_id = message.chat.id
-
     if arg == "on":
-        CHATBOT_CHATS.add(chat_id)
-        MUSICCLONE_CHATS.discard(chat_id)
-        await message.reply("🤖 Chatbot enabled here.")
+        CHATBOT_USERS.add(chat_id)
+        MUSICCLONE_USERS.discard(chat_id)
+        await message.reply("🤖 Chatbot enabled.")
     elif arg == "off":
-        CHATBOT_CHATS.discard(chat_id)
-        await message.reply("🛑 Chatbot disabled here.")
+        CHATBOT_USERS.discard(chat_id)
+        await message.reply("🛑 Chatbot disabled.")
 
-# MusicClone Toggle
+
 @app.on_message(filters.command("musicclone") & filters.user(config.SUDO_USERS))
 async def toggle_musicclone(_, message: Message):
     if len(message.command) < 2:
         return await message.reply("Usage: /musicclone on or off")
     arg = message.command[1].lower()
     chat_id = message.chat.id
-
     if arg == "on":
-        MUSICCLONE_CHATS.add(chat_id)
-        CHATBOT_CHATS.discard(chat_id)
+        MUSICCLONE_USERS.add(chat_id)
+        CHATBOT_USERS.discard(chat_id)
         await message.reply("🎵 Music clone mode enabled.")
     elif arg == "off":
-        MUSICCLONE_CHATS.discard(chat_id)
+        MUSICCLONE_USERS.discard(chat_id)
         await message.reply("🔇 Music clone mode disabled.")
 
-# Chatbot / MusicClone reply
-@app.on_message(filters.text & (filters.private | filters.group))
+
+@app.on_message(filters.private & ~filters.command(["chatbot", "musicclone", "clone"]))
 async def chatbot_reply(_, message: Message):
     chat_id = message.chat.id
-    if chat_id in CHATBOT_CHATS:
+    if chat_id in CHATBOT_USERS:
         try:
             await message.reply_chat_action("typing")
             response = openai.ChatCompletion.create(
                 model="gpt-3.5-turbo",
-                messages=[{"role": "user", "content": message.text}]
+                messages=[
+                    {"role": "user", "content": message.text},
+                ]
             )
             await message.reply(response.choices[0].message.content)
         except Exception as e:
             await message.reply("Error: " + str(e))
-    elif chat_id in MUSICCLONE_CHATS:
+    elif chat_id in MUSICCLONE_USERS:
         await message.reply_chat_action("typing")
         await asyncio.sleep(1.5)
         await message.reply("✅ Done! [Simulated Music Bot Response]")
 
-# Clone Bot
+
 @app.on_message(filters.command("clone") & filters.user(config.SUDO_USERS))
 async def clone_bot(_, message: Message):
     if len(message.command) < 2:
@@ -114,46 +95,51 @@ async def clone_bot(_, message: Message):
     except Exception as e:
         await message.reply(f"❌ Failed to start clone bot:\n{e}")
 
-# Bot Init
+
 async def init():
     if (
-        not config.STRING1 and not config.STRING2 and
-        not config.STRING3 and not config.STRING4 and not config.STRING5
+        not config.STRING1
+        and not config.STRING2
+        and not config.STRING3
+        and not config.STRING4
+        and not config.STRING5
     ):
         LOGGER(__name__).error("Assistant client variables not defined, exiting...")
         exit()
-
     await sudo()
     try:
-        for user_id in await get_gbanned():
+        users = await get_gbanned()
+        for user_id in users:
             BANNED_USERS.add(user_id)
-        for user_id in await get_banned_users():
+        users = await get_banned_users()
+        for user_id in users:
             BANNED_USERS.add(user_id)
     except:
         pass
-
     await app.start()
     for all_module in ALL_MODULES:
         importlib.import_module("Oneforall.plugins." + all_module)
     LOGGER("Oneforall.plugins").info("Successfully Imported Modules...")
-
     await userbot.start()
     await Hotty.start()
     try:
         await Hotty.stream_call("https://graph.org/file/e999c40cb700e7c684b75.mp4")
     except NoActiveGroupCall:
-        LOGGER("Oneforall").error("Start a video chat in your log group/channel. Exiting...")
+        LOGGER("Oneforall").error(
+            "Please turn on the videochat of your log group\\channel.\n\nStopping Bot..."
+        )
         exit()
     except:
         pass
-
     await Hotty.decorators()
-    LOGGER("Oneforall").info("Bot is up and running!")
+    LOGGER("Oneforall").info(
+        "ᴅʀᴏᴘ ʏᴏᴜʀ ɢɪʀʟꜰʀɪᴇɴᴅ'ꜱ ɴᴜᴍʙᴇʀ ᴀᴛ  https://t.me/PiratesMainchat ꜰᴏʀ ᴀɴʏ ɪꜱꜱᴜᴇꜱ"
+    )
     await idle()
-
     await app.stop()
     await userbot.stop()
-    LOGGER("Oneforall").info("Bot stopped.")
+    LOGGER("Oneforall").info("Stopping One for all Bot...")
+
 
 if __name__ == "__main__":
-    asyncio.get_event_loop().run_until_complete(init())
+   
