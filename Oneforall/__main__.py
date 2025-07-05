@@ -1,6 +1,5 @@
 import asyncio
 import importlib
-
 from pyrogram import idle
 from pytgcalls.exceptions import NoActiveGroupCall
 
@@ -33,18 +32,19 @@ async def init():
         users = await get_banned_users()
         for user_id in users:
             BANNED_USERS.add(user_id)
-    except Exception as e:
-        LOGGER(__name__).warning(f"Failed to load banned users: {e}")
+    except:
+        pass
 
     await app.start()
 
-    # Dynamically import all plugins
     for module in ALL_MODULES:
         try:
-            importlib.import_module("Oneforall.plugins." + module)
-            LOGGER("Oneforall.plugins").info(f"Successfully imported: {module}")
+            module_name = module.lstrip('.')
+            importlib.import_module(f"Oneforall.plugins.{module_name}")
         except Exception as e:
-            LOGGER("Oneforall.plugins").error(f"Failed to import module {module}: {e}")
+            LOGGER(__name__).error(f"Failed to import plugin {module}: {e}")
+
+    LOGGER("Oneforall.plugins").info("Successfully Imported Modules...")
 
     await userbot.start()
     await Hotty.start()
@@ -56,21 +56,19 @@ async def init():
             "Please turn on the videochat of your log group/channel.\n\nStopping Bot..."
         )
         exit()
-    except Exception as e:
-        LOGGER("Oneforall").warning(f"Hotty stream_call failed: {e}")
+    except:
+        pass
 
     await Hotty.decorators()
 
     LOGGER("Oneforall").info(
-        "✅ Bot is up and running. Drop issues in @PiratesMainchat"
+        "ᴅʀᴏᴘ ʏᴏᴜʀ ɢɪʀʟꜰʀɪᴇɴᴅ'ꜱ ɴᴜᴍʙᴇʀ ᴀᴛ ᴊᴏɪɴ https://t.me/PiratesMainchat ꜰᴏʀ ᴀɴʏ ɪꜱꜱᴜᴇꜱ"
     )
 
     await idle()
-
     await app.stop()
     await userbot.stop()
-
-    LOGGER("Oneforall").info("Bot stopped. Goodbye!")
+    LOGGER("Oneforall").info("Stopping One for all Bot...")
 
 
 if __name__ == "__main__":
