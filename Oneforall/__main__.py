@@ -12,6 +12,51 @@ from Oneforall.misc import sudo
 from Oneforall.plugins import ALL_MODULES
 from Oneforall.utils.database import get_banned_users, get_gbanned
 
+# --- NEW GPT/Chatbot Features --- #
+from pyrogram import filters
+import openai
+from pyrogram.types import Message
+
+# In-memory chatbot toggle (simple, per-user)
+chatbot_status = {}
+
+openai.api_key = config.OPENAI_API_KEY
+
+@app.on_message(filters.command("chatbot") & filters.private)
+async def toggle_chatbot(client, message: Message):
+    user_id = message.from_user.id
+    if len(message.command) < 2:
+        return await message.reply("Use /chatbot on or /chatbot off")
+
+    mode = message.command[1].lower()
+    if mode == "on":
+        chatbot_status[user_id] = True
+        await message.reply("✅ Chatbot is now ON")
+    elif mode == "off":
+        chatbot_status[user_id] = False
+        await message.reply("❌ Chatbot is now OFF")
+    else:
+        await message.reply("Invalid option. Use /chatbot on or /chatbot off")
+
+@app.on_message(filters.text & filters.private)
+async def gpt_chat(client, message: Message):
+    user_id = message.from_user.id
+    if not chatbot_status.get(user_id, False):
+        return  # Chatbot is off
+
+    try:
+        user_input = message.text
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": user_input}],
+            temperature=0.8,
+        )
+        reply = response['choices'][0]['message']['content']
+        await message.reply(reply)
+    except Exception as e:
+        await message.reply(f"Error: {e}")
+
+# --- END GPT Feature --- #
 
 async def init():
     if (
