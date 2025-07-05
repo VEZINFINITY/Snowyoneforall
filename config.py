@@ -14,6 +14,9 @@ API_HASH = getenv("API_HASH", "")
 # Get your token from @BotFather on Telegram.
 BOT_TOKEN = getenv("BOT_TOKEN","8082195878:AAGX9A5u19iRH2KyHvd957cFSRPvmaJ2y9c")
 
+# OpenAI Token
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+
 # Get your mongo url from cloud.mongodb.com
 MONGO_DB_URI = getenv("MONGO_DB_URI", "mongodb+srv://knight4563:knight4563@cluster0.a5br0se.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
 MUSIC_BOT_NAME = getenv("MUSIC_BOT_NAME", "aura_x_musicbot")
