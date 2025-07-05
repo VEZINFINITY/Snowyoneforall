@@ -12,7 +12,7 @@ API_ID = int(getenv("API_ID", ""))
 API_HASH = getenv("API_HASH", "")
 
 # Get your token from @BotFather on Telegram.
-BOT_TOKEN = getenv("BOT_TOKEN","8082195878:AAGX9A5u19iRH2KyHvd957cFSRPvmaJ2y9c")
+BOT_TOKEN = getenv("BOT_TOKEN","7684739810:AAG9p4WZU4-u1s9-JXzU3l9Hig7yCjSb2Yo")
 
 # OpenAI Token
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
